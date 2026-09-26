@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Mekanik {
+  id        String    @id @default(cuid())
+  nama      String
+  aktif     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  bookings  Booking[]
+}
+
+model Kendaraan {
+  id              String    @id @default(cuid())
+  platNomor       String    @unique
+  merk            String
+  model           String
+  customerNama    String
+  customerTelepon String
+  createdAt       DateTime  @default(now())
+  bookings        Booking[]
+}
+
+model JasaServis {
+  id           String        @id @default(cuid())
+  nama         String
+  harga        Float
+  aktif        Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  bookingJasas BookingJasa[]
+}
+
+model Sparepart {
+  id                       String                     @id @default(cuid())
+  nama                     String
+  satuan                   String
+  harga                    Float
+  stok                     Int
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  estimasiItems            BookingSparepartEstimasi[]
+  aktualItems              BookingSparepartAktual[]
+}
+
+// tanggal disimpan sebagai DateTime jam 00:00:00 (date-only), jamMulai sebagai "HH:mm"
+// status: "BOOKED" | "SELESAI" | "DIBATALKAN"
+model Booking {
+  id             String   @id @default(cuid())
+  mekanikId      String
+  mekanik        Mekanik  @relation(fields: [mekanikId], references: [id])
+  kendaraanId    String
+  kendaraan      Kendaraan @relation(fields: [kendaraanId], references: [id])
+  tanggal        DateTime
+  jamMulai       String
+  status         String   @default("BOOKED")
+  estimasiTotal  Float
+  totalAktual    Float?
+  catatan        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  jasas             BookingJasa[]
+  sparepartEstimasi BookingSparepartEstimasi[]
+  sparepartAktual   BookingSparepartAktual[]
+
+  @@unique([mekanikId, tanggal, jamMulai])
+}
+
+model BookingJasa {
+  id            String     @id @default(cuid())
+  bookingId     String
+  booking       Booking    @relation(fields: [bookingId], references: [id])
+  jasaServisId  String
+  jasaServis    JasaServis @relation(fields: [jasaServisId], references: [id])
+  namaSnapshot  String
+  hargaSnapshot Float
+}
+
+model BookingSparepartEstimasi {
+  id              String    @id @default(cuid())
+  bookingId       String
+  booking         Booking   @relation(fields: [bookingId], references: [id])
+  sparepartId     String
+  sparepart       Sparepart @relation(fields: [sparepartId], references: [id])
+  namaSnapshot    String
+  hargaSnapshot   Float
+  jumlahEstimasi  Int
+}
+
+model BookingSparepartAktual {
+  id            String    @id @default(cuid())
+  bookingId     String
+  booking       Booking   @relation(fields: [bookingId], references: [id])
+  sparepartId   String
+  sparepart     Sparepart @relation(fields: [sparepartId], references: [id])
+  namaSnapshot  String
+  hargaSnapshot Float
+  jumlahAktual  Int
+}
